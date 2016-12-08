@@ -1,0 +1,279 @@
+PRINTGRADE MACRO ;打印一位学生成绩
+	MOV AL,BYTE PTR [BX]
+    MOV AH,0
+    MOV DL,10
+    DIV DL
+    MOV TEMP,AL
+    MOV TEMP[1],AH
+	ADD TEMP,'0'
+	ADD TEMP[1],'0'
+	MOV DX,OFFSET TEMP
+    MOV AH,9
+    INT 21H
+    ADD BX,1
+ENDM
+
+PRINTTOTAL MACRO A;计算并打印总分
+LOCAL LOOPTEST
+	PUSH AX
+	PUSH CX
+	PUSH DX
+	PUSH DI
+	MOV AX,0
+	MOV CX,6
+	MOV DI,7
+LOOPTEST:
+	MOV BL,A[DI]
+	MOV BH,0
+	
+	ADD AX,BX
+	INC DI 
+	LOOP LOOPTEST
+	
+	MOV DX,0
+	MOV BX,100
+	DIV BX
+	ADD AX,'0'
+	MOV TEMP2,AL
+	MOV AX,DX
+	MOV DX,0
+	MOV BX,0AH
+	DIV BX
+	ADD AX,'0'
+	MOV TEMP2[1],AL
+	ADD DX,'0'
+	MOV TEMP2[2],DL
+	
+	LEA DX,TEMP2
+	MOV AH,9
+	INT 21H
+	POP DI
+	POP DX
+	POP CX
+	POP AX
+ENDM
+
+ADDONEGRADE MACRO;添加一门新成绩
+	LEA DX,CRLF
+	MOV AH,9
+	INT 21H
+	LEA DX,MSG8
+	MOV AH,9
+	INT 21H
+	MOV DX,[BX]
+	MOV AH,9
+	INT 21H
+	LEA DX,MSG9
+	MOV AH,9
+	INT 21H
+	LEA DX,TEMP3
+	MOV AH,10
+	INT 21H
+	
+	MOV AH,0
+	MOV AL,TEMP3[2]
+	SUB AL,'0'
+	MOV DL,10
+	MUL DL
+	ADD AL,TEMP3[3]
+	SUB AX,'0'
+	MOV SI,[BX]
+	ADD SI,12
+	MOV [SI],AL
+	
+	ADD BX,2
+ENDM
+
+DATAS SEGMENT
+    STU1 DB 'StuA  $',83,82,83,84,85,0
+    STU2 DB 'StuB  $',82,86,84,75,86,0
+    STU3 DB 'StuC  $',83,84,85,90,87,0
+    STU4 DB 'StuD  $',84,85,86,87,88,0
+    STU5 DB 'StuE  $',85,82,87,88,89,0
+    STU6 DB 'StuF  $',86,87,88,89,90,0
+    STU7 DB 'StuG  $',87,95,89,90,91,0
+    STU8 DB 'StuH  $',88,89,90,91,92,0
+    STU9 DB 'StuI  $',89,90,91,92,93,0
+    STUA DB 'StuJ  $',90,91,92,93,94,0
+    STUB DB 'StuK  $',91,92,93,94,95,0
+    STUC DB 'StuL  $',92,93,94,95,96,0
+    STUD DB 'StuM  $',93,94,95,96,97,0
+    STUE DB 'StuN  $',94,95,96,97,98,0
+    STUF DB 'StuO  $',95,96,97,98,99,0
+    INDEX DW STU1,STU2,STU3,STU4,STU5,STU6,STU7,STU8,STU9,STUA,STUB,STUC,STUD,STUE,STUF
+    MSG1 DB 'Press 1 to list grades of all 15 students.',0DH,0AH,'$'
+    MSG2 DB 'Press 2 to find a student grades by ID.',0DH,0AH,'$'
+    MSG3 DB 'Press 3 to insert the grade of extra object (Sub6).',0DH,0AH,'$'
+    MSG4 DB 'Press 4 to exit.',0DH,0AH,'$'
+    MSG5 DB '------------------------------------------------------------',0DH,0AH, '$'
+    MSG6 DB  0DH,0AH,'Please input student ID (from A,B,C... to O)',0DH,0AH, '$'
+    MSG7 DB 'No.   Sub1    Sub2    Sub3    Sub4    Sub5    Sub6    Total',0DH,0AH,0DH,0AH,'$'
+    MSG8 DB 'Please input  ','$'
+    MSG9 DB '(10-99):   ','$'
+    MSG10 DB 'Successfully Added. You can press 1 to show it.',0DH,0AH,'$'
+    MSGERR DB 0DH,0AH,'Invalid Input. Plesae input again.',0DH,0AH,'$'
+    CRLF DB 0DH,0AH,'$'
+    TEMP DB 2 DUP(0),  2 DUP('   '), '$'
+    TEMP2 DB 3 DUP(0),'$'
+    TEMP3 DB 3,?,3 DUP(0),'$'
+DATAS ENDS
+
+STACKS SEGMENT
+	DB 200 DUP(0)
+STACKS ENDS
+
+CODES SEGMENT
+    ASSUME CS:CODES,DS:DATAS,SS:STACKS
+START:
+    MOV AX,DATAS
+    MOV DS,AX
+    LEA DX,MSG1
+    MOV AH,9
+    INT 21H
+    LEA DX,MSG2
+    MOV AH,9
+    INT 21H
+    LEA DX,MSG3
+    MOV AH,9
+    INT 21H
+    LEA DX,MSG4
+    MOV AH,9
+    INT 21H
+    
+    MOV AH,1
+    INT 21H
+	CMP AL,'1'
+	JE LISTALL
+	CMP AL,'2'
+	JE LISTONE
+	CMP AL,'3'
+	JE ADDONE
+	CMP AL,'4'
+	JE EXIT
+	JMP ERROR
+	
+LISTALL:
+	LEA DX,CRLF
+	MOV AH,9
+    INT 21H
+    MOV DX,OFFSET MSG5
+	MOV AH,9
+    INT 21H
+    MOV DX,OFFSET MSG7
+    MOV AH,9
+    INT 21H
+    MOV SI,15
+    LEA BX,INDEX
+LOOPB:
+    PUSH BX
+	MOV DX,[BX]
+	MOV BX,DX
+	PUSH BX
+	MOV AH,9
+    INT 21H
+    ADD BX,7
+    MOV CX,6
+LOOPA:
+    PRINTGRADE
+LOOP LOOPA
+	POP BX
+	MOV BP,BX
+    PRINTTOTAL [BP]
+	MOV DX,OFFSET CRLF
+    MOV AH,9
+    INT 21H
+    POP BX
+
+    ADD BX,2
+    DEC SI
+    CMP SI,0
+    JNE LOOPB
+    MOV DX,OFFSET MSG5
+	MOV AH,9
+    INT 21H
+    JMP START
+LISTONE:
+	MOV DX,OFFSET MSG6
+	MOV AH,9
+    INT 21H
+	MOV AH,1
+    INT 21H
+    CMP AL,'A'
+    JL ERROR
+    CMP AL,'O'
+    JG FLAG1
+    SUB AL,64
+    JMP OUTPUT
+FLAG1:
+	CMP AL,'a'
+	JL ERROR
+	CMP AL,'o'
+	JG ERROR
+	SUB AL,96
+OUTPUT:
+    MOV DX,OFFSET CRLF
+    MOV AH,9
+    INT 21H
+    MOV DX,OFFSET MSG5
+	MOV AH,9
+    INT 21H
+	LEA BX,INDEX
+	MOV AH,0
+	ADD BX,AX
+	ADD BX,AX
+	SUB BX,2
+	MOV DX,OFFSET MSG7
+    MOV AH,9
+    INT 21H
+    MOV DX,[BX]
+	MOV AH,9
+    INT 21H
+    MOV BX,DX
+    PUSH BX
+    ADD BX,7
+    MOV CX,6
+LOOPC:
+	PRINTGRADE
+    LOOP LOOPC  
+	MOV AX,0
+	MOV CX,6
+	POP BX
+	MOV BP,BX
+    PRINTTOTAL [BP]
+    
+    MOV DX,OFFSET CRLF
+    MOV AH,9
+    INT 21H
+    MOV DX,OFFSET MSG5
+	MOV AH,9
+    INT 21H
+	JMP START
+ADDONE:
+	LEA BX,INDEX
+	MOV CX,15
+LOOPDISPLAY:
+	ADDONEGRADE
+	LOOP LOOPDISPLAY
+	
+	LEA DX,MSG10
+	MOV AH,9
+	INT 21H
+	
+	JMP START
+	
+ERROR:
+	LEA DX,MSGERR
+    MOV AH,9
+    INT 21H
+    JMP START
+EXIT:
+	MOV AH,4CH
+    INT 21H
+CODES ENDS
+    END START
+
+
+
+
+
+
